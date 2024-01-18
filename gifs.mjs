@@ -5,7 +5,7 @@ import existing from "./gifs.json" assert { type: "json" };
 async function scrape() {
 	try {
 		const url = new URL("https://api.giphy.com/v1/gifs/trending");
-		url.searchParams.set("api_key", "Q6lTJjpy5Kj7kk3jZ3rFXz37Ill6zJ4F");
+		url.searchParams.set("api_key", process.env.GIPHY_API_KEY);
 		url.searchParams.set("limit", 100);
 		url.searchParams.set("rating", "R");
 
