@@ -10,7 +10,7 @@ if (!touch) {
 }
 
 if (window.innerWidth >= 768) {
-	for (const link of [...linkList]) {
+	for (const link of linkList) {
 		link.addEventListener("mouseenter", onEnter, false);
 		link.addEventListener("mouseleave", onLeave, false);
 
@@ -22,7 +22,7 @@ if (window.innerWidth >= 768) {
 
 async function loadRandomImage() {
 	const { default: gifs } = await import("./gifs.json", {
-		assert: { type: "json" },
+		with: { type: "json" },
 	});
 	return await new Promise((resolve, reject) => {
 		const img = new window.Image();
@@ -35,14 +35,6 @@ async function loadRandomImage() {
 }
 
 function onEnter() {
-	document.documentElement.style.setProperty(
-		"--text-color",
-		`hsla(${Math.random() * 360}, 100%, 50%, 1)`
-	);
-	document.documentElement.style.setProperty(
-		"--link-color",
-		`hsla(${Math.random() * 360}, 100%, 50%, 1)`
-	);
 	if (!touch) {
 		imgPromise.then((img) => {
 			document.documentElement.style.setProperty(
@@ -66,4 +58,34 @@ function testWebP() {
 
 function onLeave() {
 	document.documentElement.style.setProperty("--background-image", "none");
+}
+
+class EmailButton extends HTMLElement {
+	static tagName = "email-button";
+
+	get button() {
+		return this.querySelector("button");
+	}
+
+	connectedCallback() {
+		this.button.addEventListener("click", this);
+	}
+
+	disconnectedCallback() {
+		this.button.removeEventListener("click", this);
+	}
+
+	handleEvent() {
+		navigator.clipboard.writeText("david@merrique.me");
+		this.button.classList.add("copied");
+		this.button.textContent = "Copied!";
+		setTimeout(() => {
+			this.button.classList.remove("copied");
+			this.button.textContent = "Email";
+		}, 3000);
+	}
+}
+
+if (!customElements.get(EmailButton.tagName)) {
+	customElements.define(EmailButton.tagName, EmailButton);
 }
