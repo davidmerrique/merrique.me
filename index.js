@@ -1,15 +1,20 @@
 const linkList = document.querySelectorAll(".Links li");
 const touch = "ontouchstart" in window;
+const hoverEnabled = !touch && window.innerWidth >= 768;
 let imgPromise;
+let hovering = false;
+let lastUrl;
 
-if (!touch) {
+if (hoverEnabled) {
 	imgPromise = loadRandomImage();
 }
 
 if (window.innerWidth >= 768) {
 	for (const link of linkList) {
-		link.addEventListener("mouseenter", onEnter, false);
-		link.addEventListener("mouseleave", onLeave, false);
+		if (hoverEnabled) {
+			link.addEventListener("mouseenter", onEnter, false);
+			link.addEventListener("mouseleave", onLeave, false);
+		}
 
 		link.style.display = "block";
 		link.style.top = `${Math.round(Math.random() * 90)}%`;
@@ -17,32 +22,55 @@ if (window.innerWidth >= 768) {
 	}
 }
 
-async function loadRandomImage() {
+async function loadRandomImage(attempts = 3) {
 	const { default: gifs } = await import("./gifs.json", {
 		with: { type: "json" },
 	});
-	return await new Promise((resolve, reject) => {
+
+	let url;
+	do {
+		url = gifs[Math.floor(Math.random() * gifs.length)];
+	} while (gifs.length > 1 && url === lastUrl);
+	lastUrl = url;
+
+	try {
+		return await preloadImage(url);
+	} catch (error) {
+		if (attempts > 1) return loadRandomImage(attempts - 1);
+		throw error;
+	}
+}
+
+function preloadImage(url) {
+	return new Promise((resolve, reject) => {
 		const img = new window.Image();
-		const url = gifs[Math.floor(Math.random() * gifs.length)] || "";
+		// Speculative fetch — don't compete with critical resources.
+		img.fetchPriority = "low";
 		img.addEventListener("load", () => resolve(img));
-		img.addEventListener("error", () => reject(url));
+		img.addEventListener("error", () => reject(new Error(`failed: ${url}`)));
 		img.src = url;
 	});
 }
 
 function onEnter() {
-	if (!touch) {
-		imgPromise.then((img) => {
+	hovering = true;
+	imgPromise.then(
+		(img) => {
+			if (!hovering) return;
 			document.documentElement.style.setProperty(
 				"--background-image",
 				`url('${img.src}')`
 			);
 			imgPromise = loadRandomImage();
-		});
-	}
+		},
+		() => {
+			imgPromise = loadRandomImage();
+		}
+	);
 }
 
 function onLeave() {
+	hovering = false;
 	document.documentElement.style.setProperty("--background-image", "none");
 }
 
